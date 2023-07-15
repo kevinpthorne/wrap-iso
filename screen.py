@@ -1,7 +1,7 @@
 import pygame
 
 
-WIDTH, HEIGHT = 1280, 768
+WIDTH, HEIGHT = 1920, 1080
 window = None
 
 def init():

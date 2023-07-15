@@ -83,6 +83,8 @@ class Map:
                 if char not in list(txt_tile_registry.keys()):
                     raise ValueError(f"Unrecognized character '{char}' on line {y}, col {x}")
                 game_map.set_tile(x, y, txt_tile_registry[char])
+                if y == 0 or x == 0:
+                    game_map.set_tile(x, y, 0)
 
         return game_map
 

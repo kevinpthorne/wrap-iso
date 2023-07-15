@@ -29,3 +29,16 @@ class FpsCounter:
     @property
     def surface(self):
         return self.font.render(str(round(self.clock.get_fps(),2)), True, (0,0,0), (255,255,255))
+
+class DebugRect:
+    position: ScreenPos
+    surface = None
+
+    def __init__(self, w: int, h: int, pos: ScreenPos):
+        self.position = pos
+        self.w = w
+        self.h = h
+    
+    def render(self, screen) -> None:
+        pygame.draw.rect(screen.window, [255, 0, 255], [self.position.x, self.position.y, self.w, self.h], 1)
+

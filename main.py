@@ -39,7 +39,9 @@ map_entities = [
     entity.Player(MapPos(5, 5))
 ]
 screen_entities = [
-    entity.FpsCounter(fps_clock, ScreenPos(0, 0))
+    entity.FpsCounter(fps_clock, ScreenPos(0, 0)),
+    # entity.DebugRect(screen.WIDTH, screen.HEIGHT, ScreenPos(screen.WIDTH // 2, screen.HEIGHT // 2)),
+    # entity.DebugRect(screen.WIDTH // 2, screen.HEIGHT // 2, ScreenPos(0, 0))
 ]
 
 # Mouse

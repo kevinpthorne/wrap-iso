@@ -14,7 +14,11 @@ MapPos = Vector2
 
 
 TILE_SIZE = 64
-TILE_OFFSET: ScreenPos = ScreenPos(screen.WIDTH // 2, -350) # TODO fix -150 constant, tie to window size
+MAP_VIEWPORT_SIZE: MapPos = MapPos(70, 70)
+TILE_OFFSET: ScreenPos = ScreenPos(screen.WIDTH // 2 - (TILE_SIZE // 2), screen.HEIGHT // 2 - ((TILE_SIZE // 2) * MAP_VIEWPORT_SIZE.y // 2) - (TILE_SIZE // 4))
+SHOW_GRID = False
+TILE_ANGLE = 16 if not SHOW_GRID else 17
+SHOW_COORDS = False
 
 class ViewportDirection(Enum):
     LEFT = 0,
@@ -30,7 +34,6 @@ class Viewport:
     in_debug_mode = False
     background_fill = (0, 0, 0)
     camera_speed = 1
-    map_viewport_size = MapPos(45, 45)
 
     the_map: Map
     map_offset: MapPos
@@ -44,8 +47,8 @@ class Viewport:
     def on_update(self, map_entities: list, screen_entities: list):
         screen.window.fill(self.background_fill)  # Clear screen
 
-        for viewport_x in range(0, int(self.map_viewport_size.x)):
-            for viewport_y in range(0, int(self.map_viewport_size.y)):
+        for viewport_x in range(0, int(MAP_VIEWPORT_SIZE.x)):
+            for viewport_y in range(0, int(MAP_VIEWPORT_SIZE.y)):
                 # Translates viewport's pos to map's pos
                 map_x, map_y = (viewport_x + self.map_offset.x) % self.the_map.width, (viewport_y + self.map_offset.y) % self.the_map.height
                 # project_pos = iso_project((viewport_x, viewport_y))
@@ -59,9 +62,9 @@ class Viewport:
                 # verts = calc_iso_vertices(project_pos)
                 verts = (
                     (project_pos.x, project_pos.y + TILE_SIZE // 2),
-                    (project_pos.x + TILE_SIZE // 2, project_pos.y + 15),  # TODO fix constant + 15
+                    (project_pos.x + TILE_SIZE // 2, project_pos.y + TILE_ANGLE),  # TODO fix constant + 15
                     (project_pos.x + TILE_SIZE, project_pos.y + TILE_SIZE // 2),
-                    (project_pos.x + TILE_SIZE // 2, project_pos.y + TILE_SIZE - 15)
+                    (project_pos.x + TILE_SIZE // 2, project_pos.y + TILE_SIZE - TILE_ANGLE)
                 )
                 pygame.draw.polygon(screen.window, self.the_map.at(map_x, map_y).color, verts)
 
@@ -76,7 +79,10 @@ class Viewport:
                     screen.window.blit(txt, (int(project_pos.x), int(project_pos.y)))
 
         for entity in screen_entities:
-            screen.window.blit(entity.surface, entity.position)
+            if entity.surface is not None:
+                screen.window.blit(entity.surface, entity.position)
+            elif entity.render:
+                entity.render(screen)
 
 
     def move(self, direction: ViewportDirection):
