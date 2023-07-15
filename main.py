@@ -26,18 +26,21 @@ TILE_TYPES = (RED, YELLOW, GREEN, BLUE)
 import maps
 the_map = maps.Map.from_txt_file("assets/map.txt")
 
-# Entities
-import sprite
-from render import MapPos
-entities = [
-    sprite.Player(MapPos(5, 5))
-]
-
 # Viewport
 import render
 viewport = render.Viewport(the_map)
 FPS = 60
 fps_clock = pygame.time.Clock()
+
+# Entities
+import entity
+from render import MapPos, ScreenPos
+map_entities = [
+    entity.Player(MapPos(5, 5))
+]
+screen_entities = [
+    entity.FpsCounter(fps_clock, ScreenPos(0, 0))
+]
 
 # Mouse
 # pygame.event.set_grab(True)
@@ -54,7 +57,7 @@ while running:
                 running = False
             if event.key == pygame.K_F3:
                 print(viewport.map_offset)
-                print(entities[0].position)
+                print(map_entities[0].position)
 
     ## Pan
     mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -72,7 +75,7 @@ while running:
     if abs(viewport.map_offset.y) > the_map.height:
         viewport.map_offset.y = 0
 
-    viewport.on_update(entities)
+    viewport.on_update(map_entities, screen_entities)
 
     # Update the display
     pygame.display.flip()

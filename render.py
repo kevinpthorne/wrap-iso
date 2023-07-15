@@ -13,65 +13,8 @@ ProjectedPos = Vector2
 MapPos = Vector2
 
 
-# class MapPos:
-#     x: int
-#     y: int
-#     map_ref: Map
-    
-#     def __init__(self, x: int, y: int, map_ref: Map):
-#         self.x = x
-#         self.y = y
-#         self.map_ref = map_ref
-
-    # @property
-    # def x(self):
-    #     return self._x
-
-    # @property
-    # def y(self):
-    #     return self._y
-
-    # @x.setter
-    # def x(self, value: int):
-    #     self._x = value# % self.map_ref.width
-
-    # @y.setter
-    # def y(self, value: int):
-    #     self._y = value# % self.map_ref.height
-
-
 TILE_SIZE = 64
-TILE_OFFSET: ScreenPos = ScreenPos(screen.WIDTH // 2, 100)
-
-
-def iso_project(pos: MapPos) -> ProjectedPos:
-    x, y = pos
-    iso_x = (x - y) * TILE_SIZE // 2
-    iso_y = (x + y) * TILE_SIZE // 4
-    return ProjectedPos(iso_x, iso_y)
-
-def square_project(pos: MapPos) -> ProjectedPos:
-    x, y = pos
-    sq_x = x * TILE_SIZE
-    sq_y = y * TILE_SIZE
-    return ProjectedPos(sq_x, sq_y)
-
-
-def calc_square_vertices(pos: ProjectedPos) -> List[int]:
-    return [
-        (pos.x, pos.y + (TILE_SIZE)), # BL
-        (pos.x, pos.y), # TL
-        (pos.x + (TILE_SIZE), pos.y), # TR
-        (pos.x + (TILE_SIZE), pos.y + (TILE_SIZE)), # BR
-    ]
-
-def calc_iso_vertices(pos: ProjectedPos) -> List[int]:
-    return [
-        (pos.x + TILE_OFFSET.x, pos.y + TILE_OFFSET.y + TILE_SIZE // 2),
-        (pos.x + TILE_OFFSET.x + TILE_SIZE // 2, pos.y + TILE_OFFSET.y + 15),  # TODO fix constant + 15
-        (pos.x + TILE_OFFSET.x + TILE_SIZE, pos.y + TILE_OFFSET.y + TILE_SIZE // 2),
-        (pos.x + TILE_OFFSET.x + TILE_SIZE // 2, pos.y + TILE_OFFSET.y + TILE_SIZE - 15)
-    ]
+TILE_OFFSET: ScreenPos = ScreenPos(screen.WIDTH // 2, -350) # TODO fix -150 constant, tie to window size
 
 class ViewportDirection(Enum):
     LEFT = 0,
@@ -84,10 +27,10 @@ class ViewportDirection(Enum):
     DOWNLEFT = 7
 
 class Viewport:
+    in_debug_mode = False
     background_fill = (0, 0, 0)
     camera_speed = 1
-    projection = "iso"
-    projections = ["iso", "sq"]
+    map_viewport_size = MapPos(45, 45)
 
     the_map: Map
     map_offset: MapPos
@@ -95,59 +38,46 @@ class Viewport:
     def __init__(self, the_map: Map):
         self.the_map = the_map
         self.map_offset = MapPos(0, 0)
-        assert self.projection in self.projections, f"Invalid projection '{self.projection}' in viewport"
-
-    def _every_tile(self):
-        if self.projection == "iso":
-            iso_limit_x, iso_limit_y = 50, 50 # int(map_width * 2.5), int(map_height * 2.5)
-            for x in range(-iso_limit_x, iso_limit_x):
-                for y in range(-iso_limit_y, iso_limit_y):
-                    yield x, y
-            return
-        elif self.projection == "sq":
-            for x in range(0, screen.WIDTH // TILE_SIZE):
-                for y in range(0, screen.height // TILE_SIZE):
-                    yield x, y
-            return
-
-    @property
-    def _project(self):
-        if self.projection == "iso":
-            return iso_project
-        elif self.projection == "sq":
-            return sq_project
-
-    @property
-    def _tile_vertices_calc(self):
-        if self.projection == "iso":
-            return calc_iso_vertices
-        elif self.projection == "sq":
-            return calc_square_vertices
+        self.debug_font = pygame.font.SysFont("Verdana", 12)
 
 
-    def on_update(self, entities: list):
-        screen.display.fill(self.background_fill)  # Clear screen
+    def on_update(self, map_entities: list, screen_entities: list):
+        screen.window.fill(self.background_fill)  # Clear screen
 
-        for viewport_x, viewport_y in self._every_tile():
-            # Translates viewport's pos to map's pos
-            map_x, map_y = (viewport_x + self.map_offset.x) % self.the_map.width, (viewport_y + self.map_offset.y) % self.the_map.height
-            # project_pos = iso_project((viewport_x, viewport_y))
-            project_pos = Vector2((viewport_x - viewport_y) * TILE_SIZE // 2, (viewport_x + viewport_y) * TILE_SIZE // 4)
+        for viewport_x in range(0, int(self.map_viewport_size.x)):
+            for viewport_y in range(0, int(self.map_viewport_size.y)):
+                # Translates viewport's pos to map's pos
+                map_x, map_y = (viewport_x + self.map_offset.x) % self.the_map.width, (viewport_y + self.map_offset.y) % self.the_map.height
+                # project_pos = iso_project((viewport_x, viewport_y))
+                project_pos = Vector2(
+                    (viewport_x - viewport_y) * TILE_SIZE // 2 + TILE_OFFSET.x, 
+                    (viewport_x + viewport_y) * TILE_SIZE // 4 + TILE_OFFSET.y
+                )
+                if project_pos.x > screen.WIDTH or project_pos.y > screen.HEIGHT or project_pos.x < -TILE_SIZE or project_pos.y < -TILE_SIZE:
+                    continue
 
-            # verts = calc_iso_vertices(project_pos)
-            verts = (
-                (project_pos.x + TILE_OFFSET.x, project_pos.y + TILE_OFFSET.y + TILE_SIZE // 2),
-                (project_pos.x + TILE_OFFSET.x + TILE_SIZE // 2, project_pos.y + TILE_OFFSET.y + 15),  # TODO fix constant + 15
-                (project_pos.x + TILE_OFFSET.x + TILE_SIZE, project_pos.y + TILE_OFFSET.y + TILE_SIZE // 2),
-                (project_pos.x + TILE_OFFSET.x + TILE_SIZE // 2, project_pos.y + TILE_OFFSET.y + TILE_SIZE - 15)
-            )
-            pygame.draw.polygon(screen.display, self.the_map.at(map_x, map_y).color, verts)
+                # verts = calc_iso_vertices(project_pos)
+                verts = (
+                    (project_pos.x, project_pos.y + TILE_SIZE // 2),
+                    (project_pos.x + TILE_SIZE // 2, project_pos.y + 15),  # TODO fix constant + 15
+                    (project_pos.x + TILE_SIZE, project_pos.y + TILE_SIZE // 2),
+                    (project_pos.x + TILE_SIZE // 2, project_pos.y + TILE_SIZE - 15)
+                )
+                pygame.draw.polygon(screen.window, self.the_map.at(map_x, map_y).color, verts)
 
-            for entity in entities:
-                entity_x, entity_y = entity.position
-                if map_x == entity_x and map_y == entity_y:
-                    rect = entity.surface.get_rect(topleft=(project_pos.x, project_pos.y))
-                    screen.display.blit(entity.surface, rect)
+                for entity in map_entities:
+                    entity_x, entity_y = entity.position
+                    if map_x == entity_x and map_y == entity_y:
+                        rect = entity.surface.get_rect(topleft=(project_pos.x, project_pos.y))
+                        screen.window.blit(entity.surface, rect)
+
+                if self.in_debug_mode:
+                    txt = self.debug_font.render(f'({map_x},{map_y})', False, (0,0,0), (255,255,255))
+                    screen.window.blit(txt, (int(project_pos.x), int(project_pos.y)))
+
+        for entity in screen_entities:
+            screen.window.blit(entity.surface, entity.position)
+
 
     def move(self, direction: ViewportDirection):
         if direction == ViewportDirection.LEFT:
