@@ -24,7 +24,8 @@ TILE_TYPES = (RED, YELLOW, GREEN, BLUE)
 
 # Load map
 import maps
-the_map = maps.Map.from_txt_file("assets/map.txt")
+# the_map = maps.Map.from_txt_file("assets/map.txt")
+the_map = maps.Map.from_noise(5)
 
 # Viewport
 import render
