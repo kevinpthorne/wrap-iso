@@ -13,11 +13,13 @@ ProjectedPos = Vector2
 MapPos = Vector2
 
 
-TILE_SIZE = 64
-MAP_VIEWPORT_SIZE: MapPos = MapPos(70, 70)
-TILE_OFFSET: ScreenPos = ScreenPos(screen.WIDTH // 2 - (TILE_SIZE // 2), screen.HEIGHT // 2 - ((TILE_SIZE // 2) * MAP_VIEWPORT_SIZE.y // 2) - (TILE_SIZE // 4))
+TILE_RATIO = Vector2(2, 4)
+TILE_SIZE = 32
+MAP_VIEWPORT_LENGTH = 64
+MAP_VIEWPORT_SIZE: MapPos = MapPos(MAP_VIEWPORT_LENGTH, MAP_VIEWPORT_LENGTH)
+TILE_OFFSET: ScreenPos = ScreenPos(screen.WIDTH // 2 - (TILE_SIZE // TILE_RATIO.x), screen.HEIGHT // 2 - ((TILE_SIZE // TILE_RATIO.x) * MAP_VIEWPORT_SIZE.y // 2) - (TILE_SIZE // TILE_RATIO.y))
 SHOW_GRID = False
-TILE_ANGLE = 16 if not SHOW_GRID else 17
+TILE_ANGLE = TILE_SIZE // TILE_RATIO.y if not SHOW_GRID else TILE_SIZE // TILE_RATIO.y + 1
 SHOW_COORDS = False
 
 class ViewportDirection(Enum):
@@ -53,9 +55,11 @@ class Viewport:
                 map_x, map_y = (viewport_x + self.map_offset.x) % self.the_map.width, (viewport_y + self.map_offset.y) % self.the_map.height
                 # project_pos = iso_project((viewport_x, viewport_y))
                 project_pos = Vector2(
-                    (viewport_x - viewport_y) * TILE_SIZE // 2 + TILE_OFFSET.x, 
-                    (viewport_x + viewport_y) * TILE_SIZE // 4 + TILE_OFFSET.y
+                    (viewport_x - viewport_y) * TILE_SIZE // TILE_RATIO.x + TILE_OFFSET.x, 
+                    (viewport_x + viewport_y) * TILE_SIZE // TILE_RATIO.y + TILE_OFFSET.y
                 )
+                
+                # Culling
                 if project_pos.x > screen.WIDTH or project_pos.y > screen.HEIGHT or project_pos.x < -TILE_SIZE or project_pos.y < -TILE_SIZE:
                     continue
 

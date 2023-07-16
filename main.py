@@ -36,7 +36,7 @@ fps_clock = pygame.time.Clock()
 import entity
 from render import MapPos, ScreenPos
 map_entities = [
-    entity.Player(MapPos(5, 5))
+    # entity.Player(MapPos(5, 5))
 ]
 screen_entities = [
     entity.FpsCounter(fps_clock, ScreenPos(0, 0)),
