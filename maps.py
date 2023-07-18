@@ -91,38 +91,33 @@ class Map:
 
         return game_map
 
-
     @staticmethod
-    def from_noise(seed: int=np.random.randint(0,100)):
-        size = (128, 128)
-        noise_gen = TileableNoiseMap(shape=size, seed=seed)
+    def from_noise(**map_json: dict):
+        map_json['size'] = (map_json['size'], map_json['size'])
+
+        noise_gen = TileableNoiseMap(**map_json)
 
         # levels = {
         #     0.25: 3, # Water
         #     0.35: 1, # Sand
         #     0.40: 2, # Grass
         #     0.95: 4, # Stone
+        #     None: 5
         # }
 
-        game_map = Map(w=size[0], h=size[1])
+        game_map = Map(w=map_json['size'][0], h=map_json['size'][1])
        
-        for y in range(0, size[1]):
-            for x in range(0, size[0]):
+        for y in range(0, map_json['size'][1]):
+            for x in range(0, map_json['size'][0]):
                 noise_val = noise_gen.noise_map[y][x]
 
-                if noise_val <= 0.0:
-                    game_map.set_tile(x, y, 3) # Water
-                    continue
-                elif noise_val <= 0.03:
-                    game_map.set_tile(x, y, 1) # Sand
-                    continue
-                elif noise_val <= 0.30:
-                    game_map.set_tile(x, y, 2) # Grass
-                    continue
-                elif noise_val <= 0.40:
-                    game_map.set_tile(x, y, 4) # Stone
-                    continue
-                game_map.set_tile(x, y, 5) # Snow
+                for i, window in enumerate(map_json['generator']['noise_windows']):
+                    if window is None:
+                        game_map.set_tile(x, y, map_json['generator']['tile_ids_for_windows'][-1])
+                        break
+                    elif noise_val <= window:
+                        game_map.set_tile(x, y, map_json['generator']['tile_ids_for_windows'][i])
+                        break
 
         return game_map
 
@@ -142,27 +137,28 @@ def _is_power_of_two(n: int) -> bool:
 class TileableNoiseMap:
 
     def __init__(self,
-        shape: Tuple[int, int] = (1024, 1024),
-        scale: float = 0.25,
-        octaves: int = 6,
+        size: Tuple[int, int] = (1024, 1024),
+        scale: float = 0.5,
+        octaves: int = 8,
         persistence: float = 0.5,
         lacunarity: float = 2.0,
         seed: int = np.random.randint(0,100),
+        **_
     ):
-        assert _is_power_of_two(shape[0]) and _is_power_of_two(shape[1]), "Noise map is not a power of 2. This means it won't be wrappable/tileable!"
+        # assert _is_power_of_two(size[0]) and _is_power_of_two(size[1]), "Noise map is not a power of 2. This means it won't be wrappable/tileable!"
 
-        self.shape = shape
+        self.size = size
         self.scale = scale
         self.octaves = octaves
         self.persistence = persistence
         self.lacunarity = lacunarity
-        self.seed = seed #if seed is not None else np.random.randint(0,100)
+        self.seed = seed
 
-        self.noise_map = np.zeros(shape)
+        self.noise_map = np.zeros(size)
 
         # make coordinate grid on [0,1]^2
-        x_idx = np.linspace(0, 1, shape[0])
-        y_idx = np.linspace(0, 1, shape[1])
+        x_idx = np.linspace(0, 1, size[0])
+        y_idx = np.linspace(0, 1, size[1])
         map_x, map_y = np.meshgrid(x_idx, y_idx)
 
         # apply perlin noise, instead of np.vectorize, consider using itertools.starmap()
@@ -171,8 +167,8 @@ class TileableNoiseMap:
                                 octaves=self.octaves,
                                 persistence=self.persistence,
                                 lacunarity=self.lacunarity,
-                                repeatx=3,
-                                repeaty=3,
+                                repeatx=size[0],
+                                repeaty=size[1],
                                 base=self.seed)
         # tmp = np.floor((self.noise_map + 0.5) * 2)
 

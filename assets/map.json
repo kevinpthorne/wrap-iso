@@ -1,0 +1,12 @@
+{
+    "size": 64,
+    "scale": 0.5,
+    "octaves": 8,
+    "persistence": 0.5,
+    "lacunarity": 0.2,
+    "seed": 5,
+    "generator": {
+        "noise_windows": [0.0, 0.03, 0.30, 0.40, null],
+        "tile_ids_for_windows": [3, 1, 2, 4, 5]
+    }
+}

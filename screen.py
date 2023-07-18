@@ -2,6 +2,7 @@ import pygame
 
 
 WIDTH, HEIGHT = 1920, 1080
+FPS = 1
 window = None
 
 def init():
