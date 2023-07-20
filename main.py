@@ -20,8 +20,8 @@ def mod_map_json(json: dict, key: str, by: int) -> dict:
 DEV_KEYS = {
     pygame.K_y: lambda map_json: mod_map_json(map_json, "size", 1),
     pygame.K_h: lambda map_json: mod_map_json(map_json, "size", -1),
-    pygame.K_u: lambda map_json: mod_map_json(map_json, "scale", 0.1),
-    pygame.K_j: lambda map_json: mod_map_json(map_json, "scale", -0.1),
+    pygame.K_u: lambda map_json: mod_map_json(map_json, "frequency", 1),
+    pygame.K_j: lambda map_json: mod_map_json(map_json, "frequency", -1),
     pygame.K_i: lambda map_json: mod_map_json(map_json, "octaves", 1),
     pygame.K_k: lambda map_json: mod_map_json(map_json, "octaves", -1),
     pygame.K_o: lambda map_json: mod_map_json(map_json, "persistence", 0.1),
@@ -29,7 +29,7 @@ DEV_KEYS = {
     pygame.K_p: lambda map_json: mod_map_json(map_json, "lacunarity", 0.1),
     pygame.K_SEMICOLON: lambda map_json: mod_map_json(map_json, "lacunarity", -0.1),
 }
-IS_EDGE_PAN_ENABLED = False
+IS_EDGE_PAN_ENABLED = True
 
 
 def main():
@@ -43,20 +43,39 @@ def main():
     is_running = True
     while is_running:
         try:
+            print("Game loop mounted")
             the_map = maps.Map.from_noise(**map_json)
 
-            # Viewport
-            viewport = render.Viewport(the_map)
-            
+            print("Map generated. Mounting entities")
             # Entities
+            map_entity = entity.MapEntity(the_map, ScreenPos(0, 0))
             map_entities = [
                 # entity.Player(MapPos(35, 35))
             ]
             screen_entities = [
                 entity.FpsCounter(fps_clock, ScreenPos(0, 0)),
+                entity.UIRect(
+                    4*the_map.width,
+                    2*the_map.height,
+                    ScreenPos(screen.WIDTH - 4*the_map.width, screen.HEIGHT - 2*(the_map.height)),
+                ),
+                entity.MapEntity(  # minimap
+                    the_map,
+                    ScreenPos(screen.WIDTH - 2*the_map.width, screen.HEIGHT - 2*(the_map.height)),
+                    map_viewport_length=the_map.width,
+                    tile_size=4,
+                    tile_offset=ScreenPos(0, 0)
+                ),
+                entity.MinimapRect(
+                    ScreenPos(screen.WIDTH - 4*the_map.width, screen.HEIGHT - 2*(the_map.height)),
+                    map_entity
+                )
                 # entity.DebugRect(screen.WIDTH, screen.HEIGHT, ScreenPos(screen.WIDTH // 2, screen.HEIGHT // 2)),
                 # entity.DebugRect(screen.WIDTH // 2, screen.HEIGHT // 2, ScreenPos(0, 0))
             ]
+            print("Mounting viewport")
+            # Viewport
+            viewport = render.Viewport(map_entity)
 
             # Mouse
             # pygame.event.set_grab(True)
@@ -93,9 +112,9 @@ def main():
                     elif mouse_y >= screen.HEIGHT - 1:
                         viewport.move(render.ViewportDirection.DOWN)
 
-                    if abs(viewport.map_offset.x) > viewport.the_map.width:
+                    if abs(viewport.map_offset.x) > the_map.width:
                         viewport.map_offset.x = 0
-                    if abs(viewport.map_offset.y) > viewport.the_map.height:
+                    if abs(viewport.map_offset.y) > the_map.height:
                         viewport.map_offset.y = 0
 
                 viewport.on_update(map_entities, screen_entities)
@@ -112,6 +131,7 @@ def main():
             break
         except:
             pygame.event.set_grab(False)
+            raise
 
     # Quit the game
     pygame.quit()

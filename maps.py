@@ -1,8 +1,10 @@
 from dataclasses import dataclass
+import itertools
 from typing import List, Set, Tuple
 
-import noise
 import numpy as np
+from pynoise.noisemodule import Perlin
+from pynoise.noiseutil import noise_map_plane
 
 
 # @dataclass
@@ -138,7 +140,7 @@ class TileableNoiseMap:
 
     def __init__(self,
         size: Tuple[int, int] = (1024, 1024),
-        scale: float = 0.5,
+        frequency: int = 1,
         octaves: int = 8,
         persistence: float = 0.5,
         lacunarity: float = 2.0,
@@ -148,30 +150,32 @@ class TileableNoiseMap:
         # assert _is_power_of_two(size[0]) and _is_power_of_two(size[1]), "Noise map is not a power of 2. This means it won't be wrappable/tileable!"
 
         self.size = size
-        self.scale = scale
+        self.frequency = frequency
         self.octaves = octaves
         self.persistence = persistence
         self.lacunarity = lacunarity
         self.seed = seed
 
-        self.noise_map = np.zeros(size)
+        # self.noise_map = np.zeros(size)
 
-        # make coordinate grid on [0,1]^2
-        x_idx = np.linspace(0, 1, size[0])
-        y_idx = np.linspace(0, 1, size[1])
-        map_x, map_y = np.meshgrid(x_idx, y_idx)
+        # # make coordinate grid on [0,1]^2
+        # x_idx = np.linspace(0, 1, size[0])
+        # y_idx = np.linspace(0, 1, size[1])
+        # map_x, map_y = np.meshgrid(x_idx, y_idx)
 
-        # apply perlin noise, instead of np.vectorize, consider using itertools.starmap()
-        self.noise_map = np.vectorize(noise.pnoise2)(map_x/scale,
-                                map_y/scale,
-                                octaves=self.octaves,
-                                persistence=self.persistence,
-                                lacunarity=self.lacunarity,
-                                repeatx=size[0],
-                                repeaty=size[1],
-                                base=self.seed)
-        # tmp = np.floor((self.noise_map + 0.5) * 2)
+        perlin = Perlin(frequency=self.frequency, lacunarity=self.lacunarity, octaves=self.octaves, persistence=self.persistence, seed=self.seed)
+        self.noise_map = noise_map_plane(
+            width=size[0],
+            height=size[1],
+            lower_x=0,
+            upper_x=1,
+            lower_z=0,
+            upper_z=1,
+            source=perlin,
+            seamless=True,
+        )
+        self.noise_map = np.reshape(self.noise_map, size)
 
-        # img = np.floor((self.noise_map + 0.5) * 255).astype(np.uint8) # <- Normalize world first
+        # img = np.floor((self.noise_map + 0.5) * 255).astype(np.uint8)
         # from PIL import Image
         # Image.fromarray(img, mode='L').show()

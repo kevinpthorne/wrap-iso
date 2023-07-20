@@ -1,12 +1,12 @@
 {
-    "size": 64,
-    "scale": 0.5,
+    "size": 128,
+    "frequency": 7,
     "octaves": 8,
-    "persistence": 0.5,
+    "persistence": 0.6,
     "lacunarity": 0.2,
-    "seed": 5,
+    "seed": 909090,
     "generator": {
-        "noise_windows": [0.0, 0.03, 0.30, 0.40, null],
+        "noise_windows": [0.01, 0.05, 0.30, 0.97, null],
         "tile_ids_for_windows": [3, 1, 2, 4, 5]
     }
 }
