@@ -9,8 +9,34 @@ from render import MapPos, ScreenPos
 
 import screen
 
+class Composite:
+    entities: list
+
+    def __init__(self, entities):
+        self.entities = entities
+
+    def render(self, screen):
+        for entity in self.entities:
+            if entity.surface is not None:
+                screen.window.blit(entity.surface, entity.position)
+            elif entity.render:
+                entity.render(screen)
+
+    def __iter__(self):
+        self.i = 0
+        return self
+
+    def __next__(self):
+        if self.i < len(self.entities):
+            x = self.entities[self.i]
+            self.i += 1
+            return x
+        raise StopIteration
+
+
 class Sprite(ABC):
     position: MapPos
+    # offset: ScreenPos = ScreenPos(0, 0)
     surface: pygame.Surface
 
 
@@ -133,6 +159,21 @@ class MapEntity:
                     tile = TILE_REGISTRY[0]
                 pygame.draw.polygon(screen.window, tile.color, verts)
 
+    def render_map_entities(self, screen, map_entities):
+        for entity in map_entities:
+            map_x, map_y = (entity.position.x + self.offset.x) % self.the_map.width, (entity.position.y + self.offset.y) % self.the_map.height
+            project_pos = Vector2(
+                (entity.position.x - entity.position.y) * self.tile_size // self.tile_ratio.x + self.tile_offset.x + self.position.x, 
+                (entity.position.x + entity.position.y) * self.tile_size // self.tile_ratio.y + self.tile_offset.y + self.position.y
+            )
+
+            # Culling
+            if project_pos.x > screen.WIDTH or project_pos.y > screen.HEIGHT or project_pos.x < -self.tile_size or project_pos.y < -self.tile_size:
+                continue
+
+            rect = entity.surface.get_rect(topleft=(project_pos.x, project_pos.y))
+            screen.window.blit(entity.surface, rect)
+
 
 class MinimapRect:
     position: ScreenPos
@@ -149,8 +190,13 @@ class MinimapRect:
         viewport_x, viewport_y = self.map_entity.offset
         map_x, map_y = (viewport_x) % self.map_entity.the_map.width, (viewport_y) % self.map_entity.the_map.height
         project_pos = Vector2(
-            (viewport_x - viewport_y) * 8 // self.map_entity.tile_ratio.x + 0, 
-            (viewport_x + viewport_y) * 8 // self.map_entity.tile_ratio.y + 0
+            (map_x - map_y) * 4 // self.map_entity.tile_ratio.x + 0, 
+            (map_x + map_y) * 4 // self.map_entity.tile_ratio.y + 0
         )
-        pygame.draw.rect(screen.window, [255, 255, 255], [self.position.x + project_pos.x, self.position.y + project_pos.y, self.w, self.h], 1)
+        pygame.draw.rect(screen.window, [255, 255, 255], [
+            self.position.x + (self.w / 2) + project_pos.x,
+            self.position.y + (self.h / 2) + project_pos.y,
+            self.w,
+            self.h
+        ], 1)
 

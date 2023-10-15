@@ -8,5 +8,7 @@ window = None
 def init():
     global window
 
-    window = pygame.display.set_mode((WIDTH, HEIGHT))
+    window = pygame.display.set_mode((WIDTH, HEIGHT), (
+        0# pygame.OPENGL
+    ), vsync=1)
     pygame.display.set_caption("Isometric Pygame Demo")

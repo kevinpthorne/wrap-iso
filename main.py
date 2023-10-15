@@ -50,29 +50,31 @@ def main():
             # Entities
             map_entity = entity.MapEntity(the_map, ScreenPos(0, 0))
             map_entities = [
-                # entity.Player(MapPos(35, 35))
+                entity.Player(MapPos(35, 35))
             ]
-            screen_entities = [
+            screen_composite = entity.Composite([
                 entity.FpsCounter(fps_clock, ScreenPos(0, 0)),
-                entity.UIRect(
-                    4*the_map.width,
-                    2*the_map.height,
-                    ScreenPos(screen.WIDTH - 4*the_map.width, screen.HEIGHT - 2*(the_map.height)),
-                ),
-                entity.MapEntity(  # minimap
-                    the_map,
-                    ScreenPos(screen.WIDTH - 2*the_map.width, screen.HEIGHT - 2*(the_map.height)),
-                    map_viewport_length=the_map.width,
-                    tile_size=4,
-                    tile_offset=ScreenPos(0, 0)
-                ),
-                entity.MinimapRect(
-                    ScreenPos(screen.WIDTH - 4*the_map.width, screen.HEIGHT - 2*(the_map.height)),
-                    map_entity
-                )
-                # entity.DebugRect(screen.WIDTH, screen.HEIGHT, ScreenPos(screen.WIDTH // 2, screen.HEIGHT // 2)),
-                # entity.DebugRect(screen.WIDTH // 2, screen.HEIGHT // 2, ScreenPos(0, 0))
-            ]
+                # entity.UIRect(
+                #     4*the_map.width,
+                #     2*the_map.height,
+                #     ScreenPos(screen.WIDTH - 4*the_map.width, screen.HEIGHT - 2*(the_map.height)),
+                # ),
+                # entity.MapEntity(  # minimap
+                #     the_map,
+                #     ScreenPos(screen.WIDTH - 2*the_map.width, screen.HEIGHT - 2*(the_map.height)),
+                #     map_viewport_length=the_map.width,
+                #     tile_size=4,
+                #     tile_offset=ScreenPos(0, 0)
+                # ),
+                # entity.MinimapRect(
+                #     ScreenPos(screen.WIDTH - 4*the_map.width, screen.HEIGHT - 2*(the_map.height)),
+                #     map_entity
+                # )
+                # entity.Composite([
+                #     entity.DebugRect(screen.WIDTH, screen.HEIGHT, ScreenPos(screen.WIDTH // 2, screen.HEIGHT // 2)),
+                #     entity.DebugRect(screen.WIDTH // 2, screen.HEIGHT // 2, ScreenPos(0, 0))
+                # ])
+            ])
             print("Mounting viewport")
             # Viewport
             viewport = render.Viewport(map_entity)
@@ -83,6 +85,8 @@ def main():
             # Game loop
             is_playing = True
             while is_playing:
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+
                 # Handle events
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
@@ -99,10 +103,11 @@ def main():
                             if event.key == dev_key:
                                 map_json = DEV_KEYS[event.key](map_json)
                                 raise RefreshInitialState()
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        viewport.find_clicked_entity(map_entities, ScreenPos(mouse_x, mouse_y))
 
                 ## Pan
                 if IS_EDGE_PAN_ENABLED:
-                    mouse_x, mouse_y = pygame.mouse.get_pos()
                     if mouse_x <= 0:
                         viewport.move(render.ViewportDirection.LEFT)
                     elif mouse_y <= 0:
@@ -117,7 +122,7 @@ def main():
                     if abs(viewport.map_offset.y) > the_map.height:
                         viewport.map_offset.y = 0
 
-                viewport.on_update(map_entities, screen_entities)
+                viewport.on_update(map_entities, screen_composite)
 
                 # Update the display
                 pygame.display.flip()

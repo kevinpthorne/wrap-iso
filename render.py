@@ -58,25 +58,19 @@ class Viewport:
         screen.window.fill(self.background_fill)  # Clear screen
 
         self.map_entity.render(screen)
-
-        if len(map_entities) > 0 and not self.debug_flags.show_coords:
-            for viewport_x in range(0, int(MAP_VIEWPORT_SIZE.x)):
-                for viewport_y in range(0, int(MAP_VIEWPORT_SIZE.y)):
-                    for entity in map_entities:
-                        entity_x, entity_y = entity.position
-                        if map_x == entity_x and map_y == entity_y:
-                            rect = entity.surface.get_rect(topleft=(project_pos.x, project_pos.y))
-                            screen.window.blit(entity.surface, rect)
-
-                    if self.debug_flags.show_coords:
-                        txt = self.debug_font.render(f'({map_x},{map_y})', False, (0,0,0), (255,255,255))
-                        screen.window.blit(txt, (int(project_pos.x), int(project_pos.y)))
+        self.map_entity.render_map_entities(screen, map_entities)
 
         for entity in screen_entities:
-            if entity.surface is not None:
+            if hasattr(entity, "surface"):
                 screen.window.blit(entity.surface, entity.position)
-            elif entity.render:
+            elif hasattr(entity, "render"):
                 entity.render(screen)
+            else:
+                print(f"Warning: cannot render entity {entity}")
+
+
+    def find_clicked_entity(self, map_entities: list, mouse_pos: ScreenPos):
+        print('click')
 
 
     def move(self, direction: ViewportDirection):
